@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// import './styles.scss';
 import { baseUrl } from '../../constants/baseUrl';
 import buildUrlWithParameters from '../../helpers/buildUrlWithParameters';
 import UserItem from './UserItem';
@@ -7,15 +6,15 @@ import Pagination from './Pagination';
 import { createRef } from 'react';
 import { itemHeight } from '../../constants/itemHeight';
 
-class GitUsers extends Component {
+class Users extends Component {
     constructor(props) {
         super(props);
         this.state = {
             users: [],
-            total: 100,
+            total: 20,
             range: {
                 since: 1,
-                per_page: 15,
+                per_page: 1,
             },
         };
         this.fetchUsers = this.fetchUsers.bind(this);
@@ -25,9 +24,12 @@ class GitUsers extends Component {
     }
 
     componentDidMount() {
-        // this.fetchUsers();
         this.updateSize();
         window.addEventListener('resize', this.updateSize);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.updateSize);
     }
 
     componentDidUpdate(prevProps, prevState) {
@@ -41,11 +43,10 @@ class GitUsers extends Component {
         const refCurrent = this.usersRef && this.usersRef.current
         if(refCurrent) {
             const newPerPage = Math.floor( refCurrent.clientHeight / itemHeight );
-            if(newPerPage !== this.state.range.per_page) {
-                console.log(newPerPage);
+            if(newPerPage !== 0 && newPerPage !== this.state.range.per_page) {
                 this.setState(state => ({
                     range: {
-                        ...state.range,
+                        since: Math.floor(state.range.since * state.range.per_page / newPerPage) || 1,
                         per_page: newPerPage,
                     }
                 }))
@@ -56,17 +57,26 @@ class GitUsers extends Component {
 
     async fetchUsers() {
         try {
-            const url = buildUrlWithParameters(baseUrl, this.state.range)
+            const {
+                since,
+                per_page,
+            } =  this.state.range;
+            const preparedRange = {
+                since: since > 1
+                    ? (since - 1) * per_page + 1
+                    : since,
+                per_page,
+            }
+
+            const url = buildUrlWithParameters(baseUrl, preparedRange)
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
             });
-            console.log(res);
-            
+
             const users = await res.json();
-            console.log(users);
             if (users) {
                 this.setState({
                     users,
@@ -99,13 +109,9 @@ class GitUsers extends Component {
         const pagesTotal = Math.ceil( total / per_page );
 
         return (
-            <div className="git-users" ref={this.usersRef}>
-                <div>
-                    { users.map(({
-                        id,
-                        login,
-                        avatar_url,
-                    }) => <UserItem key={id} login={login}/>)}
+            <div className="users" >
+                <div className="users-elements" ref={this.usersRef} style={{ minHeight: itemHeight }}>
+                    { users.map(item => <UserItem key={item.id} {...item} onClick={this.props.setUserLogin} />)}
                 </div>
                 <Pagination total={pagesTotal} setPage={this.setPage} activeIndex={since}/>
             </div>
@@ -113,4 +119,4 @@ class GitUsers extends Component {
     }
 }
 
-export default GitUsers;
+export default Users;

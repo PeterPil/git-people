@@ -10,6 +10,18 @@ class Pagination extends Component {
         this.props.setPage(page);
     }
 
+    componentDidUpdate() {
+        const {
+            total,
+            activeIndex,
+            setPage,
+        } = this.props;
+
+        if(activeIndex > total) {
+            setPage(total);
+        }
+    }
+
     renderPageNumbers() {
         return Array(this.props.total)
             .fill(0)
@@ -17,19 +29,19 @@ class Pagination extends Component {
                 const current = index + 1;
                 const activeClassName = current === this.props.activeIndex
                     ? 'pagination__number-active'
-                    : ''
+                    : '';
 
                 return (
                     <div
                         className={`pagination__number ${activeClassName}`}
                         onClick={this.onClick.bind(this, current)}
+                        key={String(index + current)}
                     >
                         { current}
                     </div>
                 )
             })
     }
-
 
     render() {
         return (
